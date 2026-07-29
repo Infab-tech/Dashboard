@@ -31,6 +31,14 @@ unique ID so it stays traceable across modules and reports.
   once the structure is validated — keep the Prisma layer as the DB
   abstraction so this migration doesn't require app-code changes, just a
   connection string swap.
+- **Deployment target: NOT Vercel.** Explicitly ruled out. Final hosting is
+  either (a) a `.exe` desktop package (Electron/Tauri wrapping the web UI) or
+  (b) self-hosted on the user's own server, running the Next.js app in
+  standalone/production mode with Node — decision deferred until the app is
+  further along. Implication: avoid Vercel-only features (e.g. Vercel-specific
+  edge functions, Vercel KV/Blob, `next/og` on edge runtime) so the build stays
+  portable to either target. Revisit this note once the exe-vs-server call is
+  made and update it here.
 
 ## Repo / collaboration
 

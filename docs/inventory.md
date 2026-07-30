@@ -4,6 +4,8 @@ Back to [PROJECT_STATUS.md](./PROJECT_STATUS.md).
 
 ## State
 
+**Currently under development on branch `feature/inventory`.**
+
 Placeholder page at `/inventory`. Prisma model: `InventoryItem` — optional
 `Project` link (nullable, since some stock may be unassigned/shared),
 `quantity`, `unit`, `location`.

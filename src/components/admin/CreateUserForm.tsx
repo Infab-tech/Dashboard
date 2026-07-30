@@ -22,8 +22,8 @@ export function CreateUserForm() {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm max-w-md mx-auto mt-6">
-      <h2 className="text-lg font-semibold text-neutral-900 mb-4 text-center">Grant Access (New User)</h2>
+    <div className="mx-auto mt-6 max-w-md rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-neutral-900 mb-4">Grant Access (New User)</h2>
       <form action={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm text-neutral-700 mb-1" htmlFor="name">

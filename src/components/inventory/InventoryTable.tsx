@@ -25,7 +25,9 @@ export function InventoryTable({ items }: { items: InventoryItemDetailed[] }) {
 
   const formatDate = (date: Date | null) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString();
+    // Pinned locale (not the runtime default) — server/browser locale can
+    // differ, which causes a hydration mismatch on a client component.
+    return new Date(date).toLocaleDateString("en-US");
   };
 
   return (

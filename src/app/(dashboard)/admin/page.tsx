@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { PagePlaceholder } from "@/components/layout/PagePlaceholder";
 import { CreateUserForm } from "@/components/admin/CreateUserForm";
+import { AdminTabs } from "@/components/admin/AdminTabs";
+import { FinancialsPanel } from "@/components/admin/FinancialsPanel";
+
+// Financials ranks projects by live-recomputed revenue and flags over-budget
+// alerts on every load — never prerender this page.
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -28,14 +33,10 @@ export default async function AdminPage() {
         </p>
       </div>
       
-      <CreateUserForm />
-
-      <div className="mt-12">
-        <PagePlaceholder
-          title="Financials"
-          description="Income and expense entries per project, categorized and dated."
-        />
-      </div>
+      <AdminTabs
+        usersTab={<CreateUserForm />}
+        financialsTab={<FinancialsPanel />}
+      />
     </div>
   );
 }

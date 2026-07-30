@@ -60,8 +60,9 @@ Structure-only pass complete for every module except Projects:
 - Prisma schema (`prisma/schema.prisma`) covers all modules.
 - Supabase Auth wired: `/login` page + middleware session gate (also covers
   `/api/*` routes, since the middleware matcher excludes only static assets).
-- All module pages except Projects are still placeholders (`PagePlaceholder`
-  component) — no real data, no CRUD yet.
+- Most module pages are still placeholders (`PagePlaceholder` component) — no
+  real data, no CRUD yet. Projects, Inventory, and Admin (users + financials)
+  are the exceptions, see their own docs.
 
 **Projects is now fully wired** — the first non-placeholder module. Prioritized
 project list, Excel-driven task tree, Gantt + daily-activity timeline, manual
@@ -70,6 +71,13 @@ dependency/delay-reason editing, and PDF export. Full detail in
 and `docs/timelines.md`). New deps: `exceljs` (Excel import — chosen over
 `xlsx`/SheetJS due to unpatched CVEs in the latter), `@react-pdf/renderer`
 (PDF export), `recharts` (daily-activity chart only; Gantt bars are hand-rolled).
+
+**Admin now has a Financials tab** — Admin-only (`/admin`), ranks projects by
+revenue generated, lists each project's expenses with date/reason, and flags
+projects over 50% expenditure-to-revenue in an Alerts section. Entries are
+added manually (no Excel import for this one) into the existing
+`FinancialEntry` model — no schema change needed. Full detail in
+`docs/admin.md` and `docs/financials.md`.
 
 **Schema change pending `db push`**: `prisma/schema.prisma` was updated for
 this pass (new `TaskStatus.DELAYED`, new `TaskHistoryEvent` model, new fields

@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { TaskHistoryEventType, TaskStatus } from "@prisma/client";
 
-const DAY_WIDTH = 26;
+const DAY_WIDTH = 30;
 const LINE_TOP = 46;
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -61,10 +64,16 @@ function formatShort(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function formatLong(date: Date): string {
+  return date.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+}
+
 /**
  * A literal number-line timeline: one point for every single day in the
- * relevant date range, with due-date markers above the line and
- * created/changed/completed activity markers below it — replaces the old
+ * relevant date range (every day gets its own date label, not just a
+ * sampled subset), with due-date markers above the line and
+ * created/changed/completed activity markers below it. Clicking a day opens
+ * a detail list of everything that happened on it — replaces the old
  * task-bar Gantt view.
  */
 export function TimelineAxis({
@@ -78,6 +87,8 @@ export function TimelineAxis({
   projectStartDate: Date | null;
   projectEndDate: Date | null;
 }) {
+  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
+
   const dates: Date[] = [];
   if (projectStartDate) dates.push(projectStartDate);
   if (projectEndDate) dates.push(projectEndDate);
@@ -92,7 +103,6 @@ export function TimelineAxis({
   const end = startOfDay(new Date(Math.max(...dates.map((d) => d.getTime()))));
   const totalDays = Math.max(1, dayIndex(end, start) + 1);
   const days = Array.from({ length: totalDays }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
-  const labelInterval = Math.max(1, Math.ceil(totalDays / 24));
 
   const tasksByDay = new Map<number, TimelineTask[]>();
   for (const task of tasks) {
@@ -114,7 +124,10 @@ export function TimelineAxis({
   const xOf = (dayIdx: number) => dayIdx * DAY_WIDTH + DAY_WIDTH / 2 + 16;
   const width = totalDays * DAY_WIDTH + 32;
   const maxStack = Math.max(1, ...[...tasksByDay.values(), ...eventsByDay.values()].map((d) => d.length));
-  const height = LINE_TOP + 24 + maxStack * 12 + 24;
+  const height = LINE_TOP + 30 + maxStack * 12 + 24;
+
+  const selectedTasks = selectedDayIdx !== null ? (tasksByDay.get(selectedDayIdx) ?? []) : [];
+  const selectedEvents = selectedDayIdx !== null ? (eventsByDay.get(selectedDayIdx) ?? []) : [];
 
   return (
     <div className="space-y-2">
@@ -127,22 +140,32 @@ export function TimelineAxis({
 
           {days.map((day, i) => {
             const x = xOf(i);
-            const showLabel = i % labelInterval === 0 || i === totalDays - 1;
+            const isFirstOfMonth = i === 0 || day.getDate() === 1;
+            const isSelected = i === selectedDayIdx;
             return (
-              <div key={i}>
-                <div
-                  className="absolute w-px bg-neutral-300 dark:bg-neutral-700"
-                  style={{ left: x, top: LINE_TOP - 4, height: 8 }}
-                />
-                {showLabel && (
-                  <span
-                    className="absolute -translate-x-1/2 whitespace-nowrap text-[10px] text-neutral-400"
-                    style={{ left: x, top: LINE_TOP + 8 }}
-                  >
-                    {formatShort(day)}
+              <button
+                key={i}
+                type="button"
+                onClick={() => setSelectedDayIdx(isSelected ? null : i)}
+                className="absolute flex flex-col items-center"
+                style={{ left: x - DAY_WIDTH / 2, top: LINE_TOP - 4, width: DAY_WIDTH, height: height - LINE_TOP + 4 }}
+              >
+                <div className={`w-px ${isSelected ? "bg-neutral-900 dark:bg-neutral-100" : "bg-neutral-300 dark:bg-neutral-700"}`} style={{ height: 8 }} />
+                <span
+                  className={`mt-1 whitespace-nowrap text-[10px] ${
+                    isSelected
+                      ? "font-semibold text-neutral-900 dark:text-neutral-100"
+                      : "text-neutral-400"
+                  }`}
+                >
+                  {day.getDate()}
+                </span>
+                {isFirstOfMonth && (
+                  <span className="whitespace-nowrap text-[9px] font-medium text-neutral-500 dark:text-neutral-400">
+                    {day.toLocaleDateString(undefined, { month: "short" })}
                   </span>
                 )}
-              </div>
+              </button>
             );
           })}
 
@@ -151,7 +174,7 @@ export function TimelineAxis({
               <span
                 key={task.id}
                 title={`${task.title} — due ${formatShort(days[dayIdx])} (${STATUS_LABEL[task.status]})`}
-                className={`absolute h-2.5 w-2.5 -translate-x-1/2 rounded-full ${STATUS_DOT_CLASS[task.status]}`}
+                className={`pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 rounded-full ${STATUS_DOT_CLASS[task.status]}`}
                 style={{ left: xOf(dayIdx), top: LINE_TOP - 12 - stackIdx * 12 }}
               />
             )),
@@ -168,17 +191,78 @@ export function TimelineAxis({
                       })`
                     : ""
                 } on ${formatShort(days[dayIdx])}`}
-                className={`absolute h-2.5 w-2.5 -translate-x-1/2 rounded-full ${EVENT_DOT_CLASS[event.eventType]}`}
+                className={`pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 rounded-full ${EVENT_DOT_CLASS[event.eventType]}`}
                 style={{ left: xOf(dayIdx), top: LINE_TOP + 16 + stackIdx * 12 }}
               />
             )),
           )}
         </div>
       </div>
+
       <p className="text-xs text-neutral-400">
         Dots above the line are task due dates (colored by status); dots below are activity
-        detected on each Excel import (created/status changed/completed).
+        detected on each Excel import (created/status changed/completed). Click any date to see
+        what it covers.
       </p>
+
+      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        {selectedDayIdx === null ? (
+          <p className="text-sm text-neutral-400">Click a date on the timeline to see what happened that day.</p>
+        ) : (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+              {formatLong(days[selectedDayIdx])}
+            </h3>
+
+            {selectedTasks.length === 0 && selectedEvents.length === 0 ? (
+              <p className="text-sm text-neutral-400">Nothing recorded for this day.</p>
+            ) : (
+              <>
+                {selectedTasks.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      Due today
+                    </p>
+                    <ul className="space-y-1 text-sm">
+                      {selectedTasks.map((task) => (
+                        <li key={task.id} className="flex items-center gap-2">
+                          <span className={`h-2 w-2 flex-shrink-0 rounded-full ${STATUS_DOT_CLASS[task.status]}`} />
+                          <span className="text-neutral-900 dark:text-neutral-100">{task.title}</span>
+                          <span className="text-neutral-400">— {STATUS_LABEL[task.status]}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedEvents.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      Activity
+                    </p>
+                    <ul className="space-y-1 text-sm">
+                      {selectedEvents.map((event, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className={`h-2 w-2 flex-shrink-0 rounded-full ${EVENT_DOT_CLASS[event.eventType]}`} />
+                          <span className="text-neutral-900 dark:text-neutral-100">{event.taskTitlePath}</span>
+                          <span className="text-neutral-400">
+                            —{" "}
+                            {event.eventType === "STATUS_CHANGED"
+                              ? `${event.fromStatus ? STATUS_LABEL[event.fromStatus] : "—"} → ${
+                                  event.toStatus ? STATUS_LABEL[event.toStatus] : "—"
+                                }`
+                              : EVENT_LABEL[event.eventType]}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

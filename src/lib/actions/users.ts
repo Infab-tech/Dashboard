@@ -69,3 +69,58 @@ export async function createUser(formData: FormData) {
 
   return { success: true, code: uniqueCode };
 }
+
+export async function revokeUserAccess(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("User not found");
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(user.supabaseAuthId, {
+    ban_duration: '87600h' // Ban for 10 years
+  });
+  if (error) {
+    console.error("Failed to ban in Supabase Auth:", error);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: false }
+  });
+
+  revalidatePath("/people");
+}
+
+export async function restoreUserAccess(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("User not found");
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(user.supabaseAuthId, {
+    ban_duration: 'none' // Lift the ban
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to restore user access in Auth");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: true }
+  });
+
+  revalidatePath("/people");
+}
+
+export async function deleteUserAccount(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+
+  const supabaseAdmin = createAdminClient();
+  await supabaseAdmin.auth.admin.deleteUser(user.supabaseAuthId);
+
+  await prisma.user.delete({
+    where: { id: userId }
+  });
+
+  revalidatePath("/people");
+}

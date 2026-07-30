@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma/client";
 import { computePriorityScore } from "@/lib/projects/priority-score";
 import { aggregateActivityByDay } from "@/lib/projects/activity";
 import { TaskTree } from "@/components/projects/TaskTree";
-import { GanttChart, type GanttTask } from "@/components/projects/GanttChart";
+import { TimelineAxis, type TimelineTask } from "@/components/projects/TimelineAxis";
 import { ActivityStrip } from "@/components/projects/ActivityStrip";
+import { TaskStatusBarChart } from "@/components/projects/TaskStatusBarChart";
 import { UploadTasksForm } from "@/components/projects/UploadTasksForm";
 
 // Task tree, timeline, and priority score change on every upload/edit — never prerender this page.
@@ -44,12 +45,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     project.historyEvents,
     project.dailyLogs.map((log) => log.logDate),
   );
-  const ganttTasks: GanttTask[] = project.tasks.map((task) => ({
+  const timelineTasks: TimelineTask[] = project.tasks.map((task) => ({
     id: task.id,
-    parentId: task.parentId,
     title: task.title,
     status: task.status,
-    startDate: task.startDate,
     dueDate: task.dueDate,
   }));
 
@@ -97,11 +96,23 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
           Timeline
         </h2>
-        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <GanttChart tasks={ganttTasks} />
-        </div>
+        <TimelineAxis
+          tasks={timelineTasks}
+          events={project.historyEvents}
+          projectStartDate={project.startDate}
+          projectEndDate={project.endDate}
+        />
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <ActivityStrip data={activityData} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          Work breakdown
+        </h2>
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <TaskStatusBarChart tasks={project.tasks} />
         </div>
       </section>
 

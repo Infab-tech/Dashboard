@@ -23,7 +23,9 @@ const STATUS_BADGE_CLASS: Record<TaskStatus, string> = {
 
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  // Pinned locale (not `undefined`) — the server's and the browser's default
+  // locale can differ, which caused a hydration mismatch on this client component.
+  return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function TaskDetailPanel({

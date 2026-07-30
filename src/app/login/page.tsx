@@ -58,20 +58,45 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-1">
+        <div className="flex items-center justify-between">
           <label className="text-sm text-neutral-700" htmlFor="password">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
+          <button
+            type="button"
+            onClick={async () => {
+              if (!email) {
+                setError("Please enter your email to reset password.");
+                return;
+              }
+              setLoading(true);
+              const supabase = createClient();
+              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+              });
+              setLoading(false);
+              if (error) {
+                setError(error.message);
+              } else {
+                setError("Password reset email sent!");
+              }
+            }}
+            className="text-xs text-neutral-500 hover:text-neutral-900"
+          >
+            Forgot password?
+          </button>
         </div>
+        <input
+          id="password"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+        />
+      </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"

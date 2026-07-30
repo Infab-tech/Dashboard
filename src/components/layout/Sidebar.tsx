@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { NAV_ITEMS } from "@/lib/nav-items";
+import { createClient } from "@/lib/supabase/client";
 
-export function Sidebar() {
+export function Sidebar({ userRole, isLoggedIn }: { userRole?: string; isLoggedIn?: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside
@@ -32,7 +43,12 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => {
+          if (item.label === "Admin" && userRole !== "ADMIN") {
+            return false;
+          }
+          return true;
+        }).map((item) => {
           const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
           return (
@@ -52,6 +68,27 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="border-t border-neutral-200 p-2">
+        {isLoggedIn ? (
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+          >
+            <span className="w-5 flex-shrink-0 text-center">✕</span>
+            {!collapsed && <span className="truncate">{isLoggingOut ? "Logging out..." : "Log out"}</span>}
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center gap-3 rounded-md px-2.5 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+          >
+            <span className="w-5 flex-shrink-0 text-center">→</span>
+            {!collapsed && <span className="truncate">Log in</span>}
+          </Link>
+        )}
+      </div>
     </aside>
   );
 }

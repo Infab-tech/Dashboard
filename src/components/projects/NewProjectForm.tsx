@@ -22,6 +22,7 @@ export function NewProjectForm() {
   const [status, setStatus] = useState<ProjectStatus>("PLANNED");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [projectLeadName, setProjectLeadName] = useState("");
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,6 +42,7 @@ export function NewProjectForm() {
           status,
           startDate: startDate || null,
           endDate: endDate || null,
+          projectLeadName: projectLeadName || null,
         }),
       });
 
@@ -104,6 +106,19 @@ export function NewProjectForm() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
+          className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          Project lead
+        </label>
+        <input
+          type="text"
+          value={projectLeadName}
+          onChange={(e) => setProjectLeadName(e.target.value)}
+          placeholder="Optional — matched or created by name"
           className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>

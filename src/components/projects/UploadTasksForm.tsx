@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export function UploadTasksForm({ projectId }: { projectId: string }) {
@@ -11,14 +11,13 @@ export function UploadTasksForm({ projectId }: { projectId: string }) {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const file = inputRef.current?.files?.[0];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
+    setSuccessMessage(null);
     setErrors([]);
     setWarnings([]);
-    setSuccessMessage(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -29,33 +28,39 @@ export function UploadTasksForm({ projectId }: { projectId: string }) {
 
       if (!res.ok) {
         setErrors(body.errors ?? [body.error ?? "Import failed."]);
-        return;
+      } else {
+        setWarnings(body.warnings ?? []);
+        setSuccessMessage(`Imported ${body.tasksCreated} task${body.tasksCreated === 1 ? "" : "s"}.`);
+        router.refresh();
       }
 
-      setWarnings(body.warnings ?? []);
-      setSuccessMessage(`Imported ${body.tasksCreated} task${body.tasksCreated === 1 ? "" : "s"}.`);
+      // Reset so choosing the same file again still fires onChange.
       if (inputRef.current) inputRef.current.value = "";
-      router.refresh();
     });
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
-    >
+    <div className="space-y-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-center gap-2">
-        <input ref={inputRef} type="file" accept=".xlsx,.xls" className="text-sm text-neutral-700 dark:text-neutral-300" />
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileChange}
+          className="hidden"
+        />
         <button
-          type="submit"
+          type="button"
           disabled={isPending}
+          onClick={() => inputRef.current?.click()}
           className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
         >
           {isPending ? "Importing…" : "Upload tasks"}
         </button>
       </div>
       <p className="text-xs text-neutral-400">
-        Re-uploading replaces this project&apos;s entire task tree with what&apos;s in the sheet.
+        Click, choose an .xlsx file, and it imports right away. Re-uploading replaces this
+        project&apos;s entire task tree with what&apos;s in the sheet.
       </p>
 
       {successMessage && <p className="text-sm text-emerald-600 dark:text-emerald-400">{successMessage}</p>}
@@ -75,6 +80,6 @@ export function UploadTasksForm({ projectId }: { projectId: string }) {
           ))}
         </ul>
       )}
-    </form>
+    </div>
   );
 }

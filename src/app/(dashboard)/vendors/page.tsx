@@ -1,10 +1,14 @@
-import { PagePlaceholder } from "@/components/layout/PagePlaceholder";
+import { getVendors } from "@/lib/actions/vendors";
+import { VendorTable } from "@/components/vendors/VendorTable";
+import { VendorHeader } from "@/components/vendors/VendorHeader";
 
-export default function VendorsPage() {
+export default async function VendorsPage() {
+  const vendors = await getVendors();
+
   return (
-    <PagePlaceholder
-      title="Vendors"
-      description="Vendor directory, linked to the projects and inventory they supply."
-    />
+    <div className="p-8 max-w-7xl mx-auto">
+      <VendorHeader />
+      <VendorTable vendors={vendors} />
+    </div>
   );
 }

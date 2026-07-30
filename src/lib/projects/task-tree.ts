@@ -1,6 +1,7 @@
 /**
- * Shared tree/flatten/Gantt-position math — used by both the web TaskTree/GanttChart
- * components and the PDF report generator, so the two stay visually consistent.
+ * Shared tree/flatten/position math — used by the web TaskTree diagram and the
+ * PDF report generator (which still uses the Gantt bounds/bar math below for
+ * its static timeline table), so the two stay consistent.
  */
 
 export interface TreeableTask {
@@ -44,6 +45,48 @@ export function flattenWithDepth<T extends TreeableTask>(tasks: T[]): { task: T;
   };
   walk(buildTaskTree(tasks));
   return result;
+}
+
+export interface PositionedTaskNode<T extends TreeableTask> {
+  task: T;
+  depth: number;
+  /** Horizontal unit position (leaves get sequential integers, parents center over their children). */
+  x: number;
+  children: PositionedTaskNode<T>[];
+}
+
+export interface TreeLayout<T extends TreeableTask> {
+  roots: PositionedTaskNode<T>[];
+  leafCount: number;
+  maxDepth: number;
+}
+
+/**
+ * Classic top-down tree-diagram layout: leaves get sequential x positions,
+ * each parent centers over the x-range of its own children. Depth maps
+ * directly to row. Used to render the task tree as boxes connected by lines
+ * instead of an indented list.
+ */
+export function layoutTree<T extends TreeableTask>(tasks: T[]): TreeLayout<T> {
+  const tree = buildTaskTree(tasks);
+  let nextLeafX = 0;
+  let maxDepth = 0;
+
+  const assign = (nodes: TaskTreeNode<T>[]): PositionedTaskNode<T>[] =>
+    nodes.map((node) => {
+      maxDepth = Math.max(maxDepth, node.depth);
+      if (node.children.length === 0) {
+        const x = nextLeafX;
+        nextLeafX += 1;
+        return { task: node.task, depth: node.depth, x, children: [] };
+      }
+      const children = assign(node.children);
+      const x = (children[0].x + children[children.length - 1].x) / 2;
+      return { task: node.task, depth: node.depth, x, children };
+    });
+
+  const roots = assign(tree);
+  return { roots, leafCount: Math.max(1, nextLeafX), maxDepth };
 }
 
 export interface GanttBounds {

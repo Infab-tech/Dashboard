@@ -15,6 +15,7 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  USER
   // more roles added when non-Admin access is built (see docs/admin.md)
 }
 

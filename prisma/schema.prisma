@@ -1,3 +1,9 @@
+// Prisma schema — structural pass only.
+// Every model has an internal UUID primary key (`id`) plus a `code` field
+// reserved for the human-readable ID format the user will specify per module.
+// Relations are shaped for the dependency-tree / cross-module linking described
+// in docs/PROJECT_STATUS.md — expect fields to grow as each module is built out.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,219 +13,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String     @id @default(uuid())
-  code           String?    @unique
-  supabaseAuthId String     @unique
-  name           String
-  email          String     @unique
-  role           UserRole   @default(ADMIN)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  dailyLogs      DailyLog[]
-  personRecord   Person?
-}
-
-model Project {
-  id               String             @id @default(uuid())
-  code             String?            @unique
-  name             String
-  description      String?
-  status           ProjectStatus      @default(PLANNED)
-  startDate        DateTime?
-  endDate          DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  projectLeadId    String?
-  assets           Asset[]
-  dailyLogs        DailyLog[]
-  financials       FinancialEntry[]
-  inventoryItems   InventoryItem[]
-  milestones       Milestone[]
-  people           PersonProject[]
-  procurements     ProcurementOrder[]
-  Person           Person?            @relation(fields: [projectLeadId], references: [id])
-  TaskHistoryEvent TaskHistoryEvent[]
-  tasks            WorkflowTask[]
-}
-
-model WorkflowTask {
-  id                                                     String         @id @default(uuid())
-  code                                                   String?        @unique
-  projectId                                              String
-  title                                                  String
-  description                                            String?
-  status                                                 TaskStatus     @default(TODO)
-  assignedToId                                           String?
-  dependsOnId                                            String?
-  dueDate                                                DateTime?
-  createdAt                                              DateTime       @default(now())
-  updatedAt                                              DateTime       @updatedAt
-  delayReason                                            String?
-  notes                                                  String?
-  parentId                                               String?
-  percentComplete                                        Int            @default(0)
-  startDate                                              DateTime?
-  assignedTo                                             Person?        @relation(fields: [assignedToId], references: [id])
-  dependsOn                                              WorkflowTask?  @relation("TaskDependency", fields: [dependsOnId], references: [id])
-  blockedTasks                                           WorkflowTask[] @relation("TaskDependency")
-  WorkflowTask_WorkflowTask_parentIdToWorkflowTask       WorkflowTask?  @relation("WorkflowTask_parentIdToWorkflowTask", fields: [parentId], references: [id])
-  other_WorkflowTask_WorkflowTask_parentIdToWorkflowTask WorkflowTask[] @relation("WorkflowTask_parentIdToWorkflowTask")
-  project                                                Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model Milestone {
-  id          String    @id @default(uuid())
-  code        String?   @unique
-  projectId   String
-  title       String
-  dueDate     DateTime
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model FinancialEntry {
-  id          String             @id @default(uuid())
-  code        String?            @unique
-  projectId   String
-  type        FinancialEntryType
-  category    String
-  amount      Decimal
-  currency    String             @default("INR")
-  entryDate   DateTime
-  description String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model InventoryItem {
-  id              String          @id @default(uuid())
-  code            String?         @unique
-  projectId       String?
-  name            String
-  globalCategory  GlobalCategory?
-  boiCategory     BOICategory?
-  vendorId        String?
-  dateOfPurchase  DateTime?
-  referenceNumber String?
-  description     String?
-  poNumber        String?
-  quantity        Int             @default(0)
-  unit            String?
-  location        String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  project         Project?        @relation(fields: [projectId], references: [id])
-  vendor          Vendor?         @relation(fields: [vendorId], references: [id])
-}
-
-model Vendor {
-  id             String             @id @default(uuid())
-  code           String?            @unique
-  name           String
-  category       String?
-  contactName    String?
-  contactEmail   String?
-  contactPhone   String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  procurements   ProcurementOrder[]
-  inventoryItems InventoryItem[]
-}
-
-model ProcurementOrder {
-  id           String            @id @default(uuid())
-  code         String?           @unique
-  projectId    String
-  vendorId     String
-  itemsSummary String
-  status       ProcurementStatus @default(REQUESTED)
-  amount       Decimal?
-  orderedAt    DateTime?
-  deliveredAt  DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vendor       Vendor            @relation(fields: [vendorId], references: [id])
-}
-
-model DailyLog {
-  id        String   @id @default(uuid())
-  code      String?  @unique
-  projectId String
-  authorId  String
-  logDate   DateTime
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id])
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model Asset {
-  id           String      @id @default(uuid())
-  code         String?     @unique
-  projectId    String?
-  name         String
-  category     String?
-  status       AssetStatus @default(IN_STORAGE)
-  assignedToId String?
-  purchaseDate DateTime?
-  value        Decimal?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  assignedTo   Person?     @relation(fields: [assignedToId], references: [id])
-  project      Project?    @relation(fields: [projectId], references: [id])
-}
-
-model Person {
-  id             String          @id @default(uuid())
-  code           String?         @unique
-  userId         String?         @unique
-  name           String
-  title          String?
-  managerId      String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  assignedAssets Asset[]
-  manager        Person?         @relation("PersonHierarchy", fields: [managerId], references: [id])
-  reports        Person[]        @relation("PersonHierarchy")
-  user           User?           @relation(fields: [userId], references: [id])
-  projects       PersonProject[]
-  Project        Project[]
-  assignedTasks  WorkflowTask[]
-}
-
-model PersonProject {
-  id            String  @id @default(uuid())
-  personId      String
-  projectId     String
-  roleOnProject String?
-  person        Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([personId, projectId])
-}
-
-model TaskHistoryEvent {
-  id            String               @id
-  projectId     String
-  taskTitlePath String
-  eventType     TaskHistoryEventType
-  fromStatus    TaskStatus?
-  toStatus      TaskStatus?
-  occurredOn    DateTime
-  createdAt     DateTime             @default(now())
-  Project       Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId, occurredOn])
-}
-
 enum UserRole {
   ADMIN
+  // more roles added when non-Admin access is built (see docs/admin.md)
 }
 
 enum ProjectStatus {
@@ -233,8 +29,15 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   BLOCKED
-  DONE
   DELAYED
+  DONE
+}
+
+enum TaskHistoryEventType {
+  CREATED
+  STATUS_CHANGED
+  COMPLETED
+  REMOVED
 }
 
 enum FinancialEntryType {
@@ -269,9 +72,226 @@ enum BOICategory {
   MECHANICAL
 }
 
-enum TaskHistoryEventType {
-  CREATED
-  STATUS_CHANGED
-  COMPLETED
-  REMOVED
+model User {
+  id             String   @id @default(uuid())
+  code           String?  @unique
+  supabaseAuthId String   @unique
+  name           String
+  email          String   @unique
+  role           UserRole @default(ADMIN)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  dailyLogs    DailyLog[]
+  personRecord Person?
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  code        String?       @unique
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNED)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  projectLeadId String?
+  projectLead   Person? @relation("ProjectLead", fields: [projectLeadId], references: [id])
+
+  tasks          WorkflowTask[]
+  milestones     Milestone[]
+  financials     FinancialEntry[]
+  inventoryItems InventoryItem[]
+  procurements   ProcurementOrder[]
+  dailyLogs      DailyLog[]
+  assets         Asset[]
+  people         PersonProject[]
+  historyEvents  TaskHistoryEvent[]
+}
+
+model WorkflowTask {
+  id              String         @id @default(uuid())
+  code            String?        @unique
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  notes           String?
+  status          TaskStatus     @default(TODO)
+  percentComplete Int            @default(0)
+  delayReason     String?
+  assignedToId    String?
+  assignedTo      Person?        @relation(fields: [assignedToId], references: [id])
+  dependsOnId     String?
+  dependsOn       WorkflowTask?  @relation("TaskDependency", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  blockedTasks    WorkflowTask[] @relation("TaskDependency")
+  parentId        String?
+  parent          WorkflowTask?  @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        WorkflowTask[] @relation("TaskHierarchy")
+  startDate       DateTime?
+  dueDate         DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// Append-only log of task changes detected on each Excel re-import — feeds the
+// daily-activity timeline strip. Not FK'd to a specific WorkflowTask row since
+// re-upload deletes and recreates the whole tree; identified by a human-readable
+// path string instead. `occurredOn` is the import timestamp, not necessarily the
+// real-world change date (Excel snapshots carry no per-row timestamp).
+model TaskHistoryEvent {
+  id            String               @id @default(uuid())
+  projectId     String
+  project       Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskTitlePath String
+  eventType     TaskHistoryEventType
+  fromStatus    TaskStatus?
+  toStatus      TaskStatus?
+  occurredOn    DateTime
+  createdAt     DateTime             @default(now())
+
+  @@index([projectId, occurredOn])
+}
+
+model Milestone {
+  id          String    @id @default(uuid())
+  code        String?   @unique
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  dueDate     DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model FinancialEntry {
+  id          String             @id @default(uuid())
+  code        String?            @unique
+  projectId   String
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        FinancialEntryType
+  category    String
+  amount      Decimal
+  currency    String             @default("INR")
+  entryDate   DateTime
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model InventoryItem {
+  id              String          @id @default(uuid())
+  code            String?         @unique
+  projectId       String?
+  project         Project?        @relation(fields: [projectId], references: [id])
+  name            String
+  globalCategory  GlobalCategory?
+  boiCategory     BOICategory?
+  vendorId        String?
+  vendor          Vendor?         @relation(fields: [vendorId], references: [id])
+  dateOfPurchase  DateTime?
+  referenceNumber String?
+  description     String?
+  poNumber        String?
+  quantity        Int             @default(0)
+  unit            String?
+  location        String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Vendor {
+  id           String   @id @default(uuid())
+  code         String?  @unique
+  name         String
+  category     String?
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  procurements   ProcurementOrder[]
+  inventoryItems InventoryItem[]
+}
+
+model ProcurementOrder {
+  id           String            @id @default(uuid())
+  code         String?           @unique
+  projectId    String
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId     String
+  vendor       Vendor            @relation(fields: [vendorId], references: [id])
+  itemsSummary String
+  status       ProcurementStatus @default(REQUESTED)
+  amount       Decimal?
+  orderedAt    DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model DailyLog {
+  id        String   @id @default(uuid())
+  code      String?  @unique
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  logDate   DateTime
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Asset {
+  id           String      @id @default(uuid())
+  code         String?     @unique
+  projectId    String?
+  project      Project?    @relation(fields: [projectId], references: [id])
+  name         String
+  category     String?
+  status       AssetStatus @default(IN_STORAGE)
+  assignedToId String?
+  assignedTo   Person?     @relation(fields: [assignedToId], references: [id])
+  purchaseDate DateTime?
+  value        Decimal?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// People + dependency tree: a Person can report to another Person (managerId),
+// forming the per-project people-on-people hierarchy described in the brief.
+model Person {
+  id        String   @id @default(uuid())
+  code      String?  @unique
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String
+  title     String?
+  managerId String?
+  manager   Person?  @relation("PersonHierarchy", fields: [managerId], references: [id])
+  reports   Person[] @relation("PersonHierarchy")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects       PersonProject[]
+  assignedTasks  WorkflowTask[]
+  assignedAssets Asset[]
+  ledProjects    Project[]       @relation("ProjectLead")
+}
+
+// Join table: which people are on which projects, and in what capacity.
+model PersonProject {
+  id            String  @id @default(uuid())
+  personId      String
+  person        Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  roleOnProject String?
+
+  @@unique([personId, projectId])
 }

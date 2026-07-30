@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma/client";
 import { computePriorityScore } from "@/lib/projects/priority-score";
-import { aggregateActivityByDay } from "@/lib/projects/activity";
 import { TaskTree } from "@/components/projects/TaskTree";
 import { TimelineAxis, type TimelineTask } from "@/components/projects/TimelineAxis";
-import { ActivityStrip } from "@/components/projects/ActivityStrip";
 import { TaskStatusBarChart } from "@/components/projects/TaskStatusBarChart";
 import { UploadTasksForm } from "@/components/projects/UploadTasksForm";
 
@@ -33,7 +31,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       },
       milestones: true,
       historyEvents: { orderBy: { occurredOn: "desc" } },
-      dailyLogs: { select: { logDate: true } },
       people: { include: { person: true } },
     },
   });
@@ -41,10 +38,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   if (!project) notFound();
 
   const priorityScore = computePriorityScore(project);
-  const activityData = aggregateActivityByDay(
-    project.historyEvents,
-    project.dailyLogs.map((log) => log.logDate),
-  );
   const timelineTasks: TimelineTask[] = project.tasks.map((task) => ({
     id: task.id,
     title: task.title,
@@ -102,9 +95,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           projectStartDate={project.startDate}
           projectEndDate={project.endDate}
         />
-        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <ActivityStrip data={activityData} />
-        </div>
       </section>
 
       <section className="space-y-3">

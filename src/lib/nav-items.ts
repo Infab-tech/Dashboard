@@ -5,15 +5,14 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: "◱" },
+  { label: "Overview", href: "/", icon: "◱" },
   { label: "Projects", href: "/projects", icon: "▤" },
   { label: "Workflow", href: "/workflow", icon: "⇄" },
-  { label: "Timelines", href: "/timelines", icon: "▭" },
-  { label: "Financials", href: "/financials", icon: "$" },
   { label: "Inventory", href: "/inventory", icon: "▣" },
-  { label: "Vendors & Procurement", href: "/vendors-procurement", icon: "⇅" },
-  { label: "Daily Log", href: "/daily-log", icon: "▦" },
+  { label: "Vendors", href: "/vendors", icon: "⇅" },
+  { label: "Procurements", href: "/procurements", icon: "🛒" },
   { label: "Assets", href: "/assets", icon: "◆" },
+  { label: "Daily Log", href: "/daily-log", icon: "▦" },
   { label: "People", href: "/people", icon: "◈" },
   { label: "Admin", href: "/admin", icon: "⚙" },
 ];

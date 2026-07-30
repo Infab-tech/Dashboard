@@ -15,7 +15,6 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  USER
   // more roles added when non-Admin access is built (see docs/admin.md)
 }
 
@@ -30,15 +29,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   BLOCKED
-  DELAYED
   DONE
-}
-
-enum TaskHistoryEventType {
-  CREATED
-  STATUS_CHANGED
-  COMPLETED
-  REMOVED
 }
 
 enum FinancialEntryType {
@@ -98,9 +89,6 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  projectLeadId String?
-  projectLead   Person? @relation("ProjectLead", fields: [projectLeadId], references: [id])
-
   tasks          WorkflowTask[]
   milestones     Milestone[]
   financials     FinancialEntry[]
@@ -109,51 +97,24 @@ model Project {
   dailyLogs      DailyLog[]
   assets         Asset[]
   people         PersonProject[]
-  historyEvents  TaskHistoryEvent[]
 }
 
 model WorkflowTask {
-  id              String         @id @default(uuid())
-  code            String?        @unique
-  projectId       String
-  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  notes           String?
-  status          TaskStatus     @default(TODO)
-  percentComplete Int            @default(0)
-  delayReason     String?
-  assignedToId    String?
-  assignedTo      Person?        @relation(fields: [assignedToId], references: [id])
-  dependsOnId     String?
-  dependsOn       WorkflowTask?  @relation("TaskDependency", fields: [dependsOnId], references: [id], onDelete: SetNull)
-  blockedTasks    WorkflowTask[] @relation("TaskDependency")
-  parentId        String?
-  parent          WorkflowTask?  @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children        WorkflowTask[] @relation("TaskHierarchy")
-  startDate       DateTime?
-  dueDate         DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-}
-
-// Append-only log of task changes detected on each Excel re-import — feeds the
-// daily-activity timeline strip. Not FK'd to a specific WorkflowTask row since
-// re-upload deletes and recreates the whole tree; identified by a human-readable
-// path string instead. `occurredOn` is the import timestamp, not necessarily the
-// real-world change date (Excel snapshots carry no per-row timestamp).
-model TaskHistoryEvent {
-  id            String               @id @default(uuid())
-  projectId     String
-  project       Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  taskTitlePath String
-  eventType     TaskHistoryEventType
-  fromStatus    TaskStatus?
-  toStatus      TaskStatus?
-  occurredOn    DateTime
-  createdAt     DateTime             @default(now())
-
-  @@index([projectId, occurredOn])
+  id           String         @id @default(uuid())
+  code         String?        @unique
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  status       TaskStatus     @default(TODO)
+  assignedToId String?
+  assignedTo   Person?        @relation(fields: [assignedToId], references: [id])
+  dependsOnId  String?
+  dependsOn    WorkflowTask?  @relation("TaskDependency", fields: [dependsOnId], references: [id])
+  blockedTasks WorkflowTask[] @relation("TaskDependency")
+  dueDate      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model Milestone {
@@ -282,7 +243,6 @@ model Person {
   projects       PersonProject[]
   assignedTasks  WorkflowTask[]
   assignedAssets Asset[]
-  ledProjects    Project[]       @relation("ProjectLead")
 }
 
 // Join table: which people are on which projects, and in what capacity.

@@ -10,10 +10,11 @@ function formatDate(value: string): string {
 }
 
 /**
- * Daily-activity strip — the one place recharts is actually used (see GanttChart
- * for why the schedule bars are hand-rolled instead). Renders TaskHistoryEvent
- * counts per day as stacked bars, plus a dot marker row for days with a DailyLog
- * note underneath, sharing the same date axis.
+ * Daily-activity strip — a recharts stacked bar chart of TaskHistoryEvent
+ * counts per day, plus a dot marker row for days with a DailyLog note
+ * underneath, sharing the same date axis. Complements TimelineAxis (which
+ * marks due dates and activity as points on a day-by-day number line) and
+ * TaskStatusBarChart (overall status breakdown).
  */
 export function ActivityStrip({ data }: { data: ActivityDayPoint[] }) {
   if (data.length === 0) {

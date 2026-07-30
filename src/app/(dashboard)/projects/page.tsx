@@ -1,10 +1,45 @@
-import { PagePlaceholder } from "@/components/layout/PagePlaceholder";
+import { prisma } from "@/lib/prisma/client";
+import { groupAndSortProjects } from "@/lib/projects/priority-score";
+import { ProjectList } from "@/components/projects/ProjectList";
 
-export default function ProjectsPage() {
+// Priority ordering and task counts change on every upload/edit — never prerender this page.
+export const dynamic = "force-dynamic";
+
+export default async function ProjectsPage() {
+  const projects = await prisma.project.findMany({
+    include: {
+      projectLead: true,
+      tasks: { select: { status: true, dueDate: true } },
+      milestones: { select: { completedAt: true, dueDate: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const groups = groupAndSortProjects(projects);
+
   return (
-    <PagePlaceholder
-      title="Projects"
-      description="All ongoing and finished projects, each with a unique ID, status, and drill-down into its workflow, timeline, financials, inventory, and people."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Projects</h1>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          All ongoing and finished projects, ordered by what needs attention most.
+        </p>
+      </div>
+
+      <ProjectList
+        groups={groups.map((group) => ({
+          status: group.status,
+          projects: group.projects.map((project) => ({
+            id: project.id,
+            name: project.name,
+            code: project.code,
+            status: project.status,
+            endDate: project.endDate,
+            priorityScore: project.priorityScore,
+            projectLeadName: project.projectLead?.name ?? null,
+          })),
+        }))}
+      />
+    </div>
   );
 }

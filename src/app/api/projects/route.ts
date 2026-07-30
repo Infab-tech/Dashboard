@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma/client";
 import type { ProjectStatus } from "@prisma/client";
+import { resolvePersonId } from "@/lib/projects/people";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ interface CreateProjectBody {
   status?: ProjectStatus;
   startDate?: string | null;
   endDate?: string | null;
+  projectLeadName?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -23,6 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   const status = body.status && VALID_STATUSES.includes(body.status) ? body.status : "PLANNED";
+  const projectLeadId = await resolvePersonId(prisma, body.projectLeadName?.trim() || null);
 
   const project = await prisma.project.create({
     data: {
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
       status,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
+      projectLeadId,
     },
   });
 

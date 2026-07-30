@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient, TaskStatus } from "@prisma/client";
 import type { ParsedImport, ParsedTaskRow } from "./excel-import";
+import { resolvePersonId } from "./people";
 
 export interface ApplyImportResult {
   tasksCreated: number;
@@ -29,21 +30,6 @@ async function snapshotExistingTasks(
   };
 
   return tasks.map((task) => ({ pathKey: pathKeyOf(task.id), status: task.status }));
-}
-
-async function resolvePersonId(
-  tx: Prisma.TransactionClient,
-  name: string | null,
-  cache: Map<string, string>,
-): Promise<string | null> {
-  if (!name) return null;
-  const key = name.trim().toLowerCase();
-  if (cache.has(key)) return cache.get(key)!;
-
-  const existing = await tx.person.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
-  const id = existing ? existing.id : (await tx.person.create({ data: { name } })).id;
-  cache.set(key, id);
-  return id;
 }
 
 function diffToHistoryEvents(

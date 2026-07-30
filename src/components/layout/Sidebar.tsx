@@ -11,13 +11,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`flex h-screen flex-col border-r border-neutral-200 bg-white transition-[width] duration-200 dark:border-neutral-800 dark:bg-neutral-950 ${
+      className={`flex h-screen flex-col border-r border-neutral-200 bg-white transition-[width] duration-200 ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
-      <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-3 dark:border-neutral-800">
+      <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-3">
         {!collapsed && (
-          <span className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+          <span className="truncate text-sm font-semibold text-neutral-900">
             InFAB Dashboard
           </span>
         )}
@@ -25,7 +25,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100"
         >
           {collapsed ? "»" : "«"}
         </button>
@@ -42,8 +42,8 @@ export function Sidebar() {
               title={collapsed ? item.label : undefined}
               className={`flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors ${
                 isActive
-                  ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-                  : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  ? "bg-neutral-900 text-white"
+                  : "text-neutral-700 hover:bg-neutral-100"
               }`}
             >
               <span className="w-5 flex-shrink-0 text-center">{item.icon}</span>

@@ -80,6 +80,7 @@ model User {
   name           String
   email          String   @unique
   role           UserRole @default(ADMIN)
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -212,6 +213,11 @@ model Vendor {
   contactName  String?
   contactEmail String?
   contactPhone String?
+  address      String?
+  place        String?
+  state        String?
+  postalCode   String?
+  gstStatus    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -93,25 +93,56 @@ async function main() {
   await prisma.dailyLog.deleteMany({}); // Clear existing logs
 
   for (const log of rawLogs) {
-    const matchingProject = await prisma.project.findFirst({
+    let matchingProject = await prisma.project.findFirst({
       where: {
         name: {
-          contains: log.projectName,
+          equals: log.projectName,
           mode: 'insensitive',
         }
       }
     });
 
+    // If project doesn't exist, create it so they can select it
+    if (!matchingProject) {
+      matchingProject = await prisma.project.create({
+        data: {
+          name: log.projectName,
+          status: 'ONGOING'
+        }
+      });
+    }
+
+    // Parse the assignedTo string (e.g. "Chandru / Amos" or "Jacob")
+    const assigneesList = log.assignedTo
+      ? log.assignedTo.split(/[\/,]/).map(s => s.trim()).filter(Boolean)
+      : [];
+    
+    const personIds = [];
+    for (const personName of assigneesList) {
+      let person = await prisma.person.findFirst({
+        where: { name: { contains: personName, mode: 'insensitive' } }
+      });
+      
+      if (!person) {
+        person = await prisma.person.create({
+          data: { name: personName }
+        });
+      }
+      personIds.push(person.id);
+    }
+
     await prisma.dailyLog.create({
       data: {
         date: new Date(log.date),
         serialNo: log.serialNo,
-        projectName: log.projectName,
-        projectId: matchingProject?.id || null,
+        projectName: log.projectName, // Keeping string as fallback/cache
+        projectId: matchingProject.id,
         task: log.task,
-        assignedTo: log.assignedTo,
         targetDateOrStatus: log.targetDateOrStatus,
         remarks: log.remarks,
+        assignees: {
+          connect: personIds.map(id => ({ id }))
+        }
       }
     });
   }

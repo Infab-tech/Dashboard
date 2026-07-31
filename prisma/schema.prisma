@@ -280,9 +280,6 @@ model Asset {
   assignedTo   Person?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   purchaseDate DateTime?
   value        Decimal?
-  description  String?
-  modelNumber  String?
-  quantity     Int         @default(1)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }

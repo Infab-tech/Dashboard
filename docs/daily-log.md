@@ -4,16 +4,14 @@ Back to [PROJECT_STATUS.md](./PROJECT_STATUS.md).
 
 ## State
 
-Placeholder page at `/daily-log`. Prisma model: `DailyLog` — belongs to a
-`Project` and an `author` (`User`), `logDate` + free-text `content`.
+Fully functional page at `/daily-log`. Prisma model: `DailyLog` — contains structured fields (`date`, `serialNo`, `projectName`, `task`, `assignedTo`, `targetDateOrStatus`, `remarks`) to exactly match the provided Excel/Screenshot format.
 
 ## Decisions
 
-- Author is a `User` (Supabase-auth-linked), not a `Person` — logs are tied to
-  who was signed in when they wrote it, not just any person in the org chart.
+- Author tracking is currently optional.
+- Projects are logged via a free-text `projectName` field to accommodate shorthand naming (e.g. "CMTI"), with a soft relational link (`projectId`) to the `Project` model if a match is found.
+- Assignees (`assignedTo`) are stored as plain text strings to allow for multiple assignees in shorthand like "Chandru / Amos", prioritizing speed of data entry over strict relational mapping.
 
 ## Open questions
 
-- Human-readable ID format for log entries.
-- Structured fields (weather, headcount, incidents) vs. free-text `content` —
-  revisit once real usage patterns are clear.
+- Re-evaluate if `assignedTo` should be fully migrated to relational `Person` links in the future if advanced filtering by user is needed.

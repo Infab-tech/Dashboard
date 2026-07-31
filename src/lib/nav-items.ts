@@ -15,4 +15,5 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Daily Log", href: "/daily-log", icon: "▦" },
   { label: "People", href: "/people", icon: "◈" },
   { label: "Admin", href: "/admin", icon: "⚙" },
+  { label: "Financials", href: "/financials", icon: "💰" },
 ];

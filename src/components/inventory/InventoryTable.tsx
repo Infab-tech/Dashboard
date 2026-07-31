@@ -7,11 +7,8 @@ type InventoryItemDetailed = {
   id: string;
   code: string | null;
   name: string;
-  globalCategory: string | null;
-  boiCategory: string | null;
+  referenceNumber: string | null;
   vendor: { id: string; name: string } | null;
-  poNumber: string | null;
-  dateOfPurchase: Date | null;
   quantity: number;
   unit: string | null;
 };
@@ -23,32 +20,23 @@ export function InventoryTable({ items }: { items: InventoryItemDetailed[] }) {
     }
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return '-';
-    // Pinned locale (not the runtime default) — server/browser locale can
-    // differ, which causes a hydration mismatch on a client component.
-    return new Date(date).toLocaleDateString("en-US");
-  };
-
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
       <table className="w-full text-sm text-left text-gray-500">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
           <tr>
             <th className="px-6 py-3">ID</th>
-            <th className="px-6 py-3">Component Name</th>
-            <th className="px-6 py-3">Category</th>
-            <th className="px-6 py-3">Vendor</th>
-            <th className="px-6 py-3">PO Number</th>
-            <th className="px-6 py-3">Purchase Date</th>
-            <th className="px-6 py-3">Qty</th>
+            <th className="px-6 py-3">Part Name</th>
+            <th className="px-6 py-3">Part Number</th>
+            <th className="px-6 py-3">Vendor / Manufacturer</th>
+            <th className="px-6 py-3">Qty In Stock</th>
             <th className="px-6 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                 No inventory items found.
               </td>
             </tr>
@@ -59,15 +47,8 @@ export function InventoryTable({ items }: { items: InventoryItemDetailed[] }) {
                   {item.code || '-'}
                 </td>
                 <td className="px-6 py-4">{item.name}</td>
-                <td className="px-6 py-4">
-                  <div>{item.globalCategory?.replace('_', ' ')}</div>
-                  {item.boiCategory && (
-                    <div className="text-xs text-gray-400">{item.boiCategory}</div>
-                  )}
-                </td>
+                <td className="px-6 py-4">{item.referenceNumber || '-'}</td>
                 <td className="px-6 py-4">{item.vendor?.name || '-'}</td>
-                <td className="px-6 py-4">{item.poNumber || '-'}</td>
-                <td className="px-6 py-4">{formatDate(item.dateOfPurchase)}</td>
                 <td className="px-6 py-4">
                   {item.quantity} {item.unit || ''}
                 </td>

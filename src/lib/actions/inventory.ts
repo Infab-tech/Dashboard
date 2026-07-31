@@ -36,7 +36,7 @@ export async function createInventoryItem(data: {
   const vendor = await prisma.vendor.findUnique({ where: { id: data.vendorId } });
   if (!vendor) throw new Error("Vendor not found");
 
-  const poSuffix = data.poNumber.slice(-5).padStart(5, '0');
+  const poSuffix = data.poNumber.slice(-4).padStart(4, '0');
   const vendorCode = vendor.code || 'UNK';
   
   const day = String(data.dateOfPurchase.getUTCDate()).padStart(2, '0');

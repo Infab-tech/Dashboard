@@ -72,39 +72,50 @@ export function computePriorityScore(project: ProjectForScoring, now: Date = new
   return Math.round(score);
 }
 
-export type ProjectForListing = ProjectForScoring & {
+export type ProjectForListing = {
   id: string;
   status: ProjectStatus;
   startDate: Date | null;
+  endDate: Date | null;
 };
 
 const STATUS_GROUP_ORDER: ProjectStatus[] = ["ONGOING", "ON_HOLD", "PLANNED", "COMPLETED"];
 
 /**
  * Groups projects by status in the fixed order Ongoing -> On Hold -> Planned -> Completed,
- * sorting each group by what needs the most attention: Ongoing/On Hold by priority score
- * (desc), Planned by start date (asc, nothing to score yet), Completed by end date (desc).
+ * sorting each group by start/end date: Ongoing/On Hold by end date (soonest deadline
+ * first, undated projects last, tie-broken by start date), Planned by start date (asc),
+ * Completed by end date (desc, most recently finished first).
  */
 export function groupAndSortProjects<T extends ProjectForListing>(
   projects: T[],
-  now: Date = new Date(),
-): { status: ProjectStatus; projects: (T & { priorityScore: number })[] }[] {
-  const scored = projects.map((project) => ({
-    ...project,
-    priorityScore: computePriorityScore(project, now),
-  }));
-
+): { status: ProjectStatus; projects: T[] }[] {
   return STATUS_GROUP_ORDER.map((status) => {
-    const group = scored.filter((project) => project.status === status);
+    const group = projects.filter((project) => project.status === status);
 
     if (status === "PLANNED") {
       group.sort((a, b) => (a.startDate?.getTime() ?? Infinity) - (b.startDate?.getTime() ?? Infinity));
     } else if (status === "COMPLETED") {
       group.sort((a, b) => (b.endDate?.getTime() ?? 0) - (a.endDate?.getTime() ?? 0));
     } else {
-      group.sort((a, b) => b.priorityScore - a.priorityScore);
+      group.sort((a, b) => {
+        const aEnd = a.endDate?.getTime() ?? Infinity;
+        const bEnd = b.endDate?.getTime() ?? Infinity;
+        if (aEnd !== bEnd) return aEnd - bEnd;
+        return (a.startDate?.getTime() ?? Infinity) - (b.startDate?.getTime() ?? Infinity);
+      });
     }
 
     return { status, projects: group };
   }).filter((group) => group.projects.length > 0);
+}
+
+/** Sorts by end date ascending (soonest deadline first, undated last), tie-broken by start date. */
+export function sortByDate<T extends Pick<ProjectForListing, "startDate" | "endDate">>(projects: T[]): T[] {
+  return [...projects].sort((a, b) => {
+    const aEnd = a.endDate?.getTime() ?? Infinity;
+    const bEnd = b.endDate?.getTime() ?? Infinity;
+    if (aEnd !== bEnd) return aEnd - bEnd;
+    return (a.startDate?.getTime() ?? Infinity) - (b.startDate?.getTime() ?? Infinity);
+  });
 }

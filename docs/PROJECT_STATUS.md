@@ -79,13 +79,54 @@ added manually (no Excel import for this one) into the existing
 `FinancialEntry` model — no schema change needed. Full detail in
 `docs/admin.md` and `docs/financials.md`.
 
-**Schema change pending `db push`**: `prisma/schema.prisma` was updated for
-this pass (new `TaskStatus.DELAYED`, new `TaskHistoryEvent` model, new fields
-on `WorkflowTask`/`Project`/`Person`) but **not yet pushed** to the shared
-Supabase instance — no `.env` with `DATABASE_URL` existed in this environment
-to push against. Whoever has real credentials needs to pull this schema and
-run `npx prisma db push` before the Projects module can be used against the
-live DB. Coordinate with the other dev first per `CONTRIBUTING.md`.
+**Schema is now pushed (2026-07-31)** — the `TaskStatus.DELAYED`/`TaskHistoryEvent`/etc.
+changes noted above as pending, plus a new `Project.parentId` self-relation
+for sub-projects (see below), have been applied to the shared Supabase
+instance. `Project.parentId` specifically was added by hand via a targeted
+`ALTER TABLE` (not a full `db push`) — see the next note for why.
+
+**⚠️ Active concurrent-write conflict found on `DailyLog` (2026-07-31) —
+needs the other dev, not just this doc.** A `db push` run mid-session hit a
+hard blocker: the live `DailyLog` table's actual columns
+(`assignedTo`, `date`, `projectName`, `remarks`, `serialNo`,
+`targetDateOrStatus`, `task`, all with real data — **65 rows**) don't match
+`schema.prisma`'s `DailyLog` model (`projectId`/`authorId` required,
+`logDate`/`content`) at all, and don't match what's described in
+`docs/daily-log.md` either. This exact conflict wasn't present a short time
+earlier in the same session (an initial schema diff only flagged unrelated
+`Asset`/`User`/`Vendor` columns, not this) — strongly suggesting someone
+pushed a real Daily Log implementation straight to the shared DB, live,
+while this session was running. **A full `db push` will fail until this is
+resolved** — whoever owns that DailyLog work needs to get its shape into
+`schema.prisma`/`docs/daily-log.md` on a shared branch before anyone runs
+`db push` again. Do not `--force-reset` — real rows are at stake. Because of
+this, `Project.parentId` was added with a narrow hand-written
+`ALTER TABLE "Project" ADD COLUMN "parentId" ...` + FK (matching the
+`ON DELETE/UPDATE CASCADE` convention already used by
+`WorkflowTask_parentId_fkey`) instead of a full `db push`, specifically to
+avoid touching `DailyLog` at all.
+
+**⚠️ Schema drift found during that push, now reconciled** — the live DB had
+columns that were never in this branch's `schema.prisma`: `Asset.description`,
+`Asset.modelNumber`, `Asset.quantity`, `User.isActive`,
+`Vendor.address`/`place`/`postalCode`/`state`/`gstStatus` — all with real data
+(`Vendor`'s address fields had 360 non-null rows each). Someone pushed these
+directly to the shared DB (likely from `feature/inventory`/vendor work)
+without them landing in `schema.prisma` on `main` or this branch. They've now
+been added to `schema.prisma` to match the live DB exactly (verified via
+`information_schema.columns`, no data was dropped), but **if you have a local
+branch with your own version of these fields, diff it against the current
+`schema.prisma` before your next `db push`** — there may still be a mismatch
+between what's committed here and what you were expecting.
+
+**Projects gained sub-projects and human-readable codes.** `Project` now has
+a `parentId`/`subProjects` self-relation — a sub-project is a full `Project`
+row (own status/dates/tasks/financials), just displayed nested under its
+parent on `/projects` and in a "Sub-projects" section on `/projects/[id]`,
+with a "+ Sub-project" quick-add in both places. Deleting a project cascades
+to its sub-projects. Every project also gets an auto-generated `code` now
+(e.g. `PT-280&330`, `COC-BIRAC`) — see `docs/projects.md` Decisions for the
+exact algorithm. Both close open questions that were previously listed there.
 
 ## Not started yet
 

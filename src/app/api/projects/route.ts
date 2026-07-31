@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma/client";
 import type { ProjectStatus } from "@prisma/client";
 import { resolvePersonId } from "@/lib/projects/people";
+import { resolveUniqueProjectCode } from "@/lib/projects/generate-code";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ interface CreateProjectBody {
   startDate?: string | null;
   endDate?: string | null;
   projectLeadName?: string | null;
+  parentId?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -24,17 +26,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Project name is required." }, { status: 400 });
   }
 
+  const parentId = body.parentId?.trim() || null;
+  if (parentId) {
+    const parent = await prisma.project.findUnique({ where: { id: parentId }, select: { id: true } });
+    if (!parent) {
+      return NextResponse.json({ error: "Parent project not found." }, { status: 400 });
+    }
+  }
+
   const status = body.status && VALID_STATUSES.includes(body.status) ? body.status : "PLANNED";
   const projectLeadId = await resolvePersonId(prisma, body.projectLeadName?.trim() || null);
+  const code = await resolveUniqueProjectCode(prisma, name);
 
   const project = await prisma.project.create({
     data: {
       name,
+      code,
       description: body.description?.trim() || null,
       status,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
       projectLeadId,
+      parentId,
     },
   });
 

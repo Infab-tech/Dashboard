@@ -4,9 +4,26 @@ import { prisma } from "@/lib/prisma/client";
 import { revalidatePath } from "next/cache";
 import { GlobalCategory, BOICategory } from "@prisma/client";
 
-export async function getInventoryItems(category?: GlobalCategory) {
+export async function getInventoryItems(category?: GlobalCategory, query?: string) {
+  let whereClause: any = {};
+  
+  if (category) {
+    whereClause.globalCategory = category;
+  }
+  
+  if (query) {
+    whereClause.OR = [
+      { name: { contains: query, mode: "insensitive" } },
+      { code: { contains: query, mode: "insensitive" } },
+      { description: { contains: query, mode: "insensitive" } },
+      { referenceNumber: { contains: query, mode: "insensitive" } },
+      { poNumber: { contains: query, mode: "insensitive" } },
+      { vendor: { name: { contains: query, mode: "insensitive" } } }
+    ];
+  }
+
   return await prisma.inventoryItem.findMany({
-    where: category ? { globalCategory: category } : undefined,
+    where: whereClause,
     include: { project: true, vendor: true },
     orderBy: { createdAt: 'desc' }
   });

@@ -8,6 +8,7 @@ import { TimelineAxis, type TimelineTask } from "@/components/projects/TimelineA
 import { TaskStatusBarChart } from "@/components/projects/TaskStatusBarChart";
 import { UploadTasksForm } from "@/components/projects/UploadTasksForm";
 import { NewProjectForm } from "@/components/projects/NewProjectForm";
+import { EditProjectForm } from "@/components/projects/EditProjectForm";
 
 // Task tree, timeline, and priority score change on every upload/edit — never prerender this page.
 export const dynamic = "force-dynamic";
@@ -66,6 +67,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     dueDate: task.dueDate,
   }));
 
+  const editProjectData = {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    status: project.status,
+    startDate: project.startDate,
+    endDate: project.endDate,
+    projectLeadName: project.projectLead?.name || null,
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -85,18 +96,24 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {project.projectLead ? `Lead: ${project.projectLead.name}` : "No project lead set"} · {formatDate(project.startDate)} – {formatDate(project.endDate)}
           </p>
+          {project.description && (
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300 max-w-2xl">{project.description}</p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end gap-3">
           <div className="text-right">
             <p className="text-xs text-neutral-400">Priority score</p>
             <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{priorityScore}</p>
           </div>
-          <a
-            href={`/api/projects/${project.id}/export`}
-            className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
-          >
-            Export PDF
-          </a>
+          <div className="flex items-center gap-2">
+            <EditProjectForm project={editProjectData} />
+            <a
+              href={`/api/projects/${project.id}/export`}
+              className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            >
+              Export PDF
+            </a>
+          </div>
         </div>
       </div>
 

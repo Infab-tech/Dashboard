@@ -11,7 +11,7 @@ export async function getDailyLogs(query?: string) {
       OR: [
         { projectName: { contains: query, mode: "insensitive" } },
         { task: { contains: query, mode: "insensitive" } },
-        { assignedTo: { contains: query, mode: "insensitive" } },
+        { assignees: { some: { name: { contains: query, mode: "insensitive" } } } },
       ],
     };
   }
@@ -22,7 +22,8 @@ export async function getDailyLogs(query?: string) {
       { serialNo: "asc" }
     ],
     include: {
-      project: { select: { name: true } }
+      project: { select: { name: true } },
+      assignees: { select: { id: true, name: true } }
     }
   });
 }
@@ -30,6 +31,9 @@ export async function getDailyLogs(query?: string) {
 export async function getDailyLog(id: string) {
   return await prisma.dailyLog.findUnique({
     where: { id },
+    include: {
+      assignees: { select: { id: true } }
+    }
   });
 }
 
@@ -39,7 +43,7 @@ export async function createDailyLog(data: {
   projectName: string;
   projectId?: string | null;
   task: string;
-  assignedTo: string;
+  assigneeIds: string[];
   targetDateOrStatus?: string | null;
   remarks?: string | null;
 }) {
@@ -50,9 +54,11 @@ export async function createDailyLog(data: {
       projectName: data.projectName,
       projectId: data.projectId || null,
       task: data.task,
-      assignedTo: data.assignedTo,
       targetDateOrStatus: data.targetDateOrStatus,
       remarks: data.remarks,
+      assignees: {
+        connect: data.assigneeIds.map(id => ({ id }))
+      }
     },
   });
   revalidatePath("/daily-log");
@@ -65,7 +71,7 @@ export async function updateDailyLog(id: string, data: {
   projectName: string;
   projectId?: string | null;
   task: string;
-  assignedTo: string;
+  assigneeIds: string[];
   targetDateOrStatus?: string | null;
   remarks?: string | null;
 }) {
@@ -77,9 +83,11 @@ export async function updateDailyLog(id: string, data: {
       projectName: data.projectName,
       projectId: data.projectId || null,
       task: data.task,
-      assignedTo: data.assignedTo,
       targetDateOrStatus: data.targetDateOrStatus,
       remarks: data.remarks,
+      assignees: {
+        set: data.assigneeIds.map(id => ({ id }))
+      }
     },
   });
   revalidatePath("/daily-log");

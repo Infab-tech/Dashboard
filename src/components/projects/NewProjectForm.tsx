@@ -32,6 +32,7 @@ export function NewProjectForm({
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("PLANNED");
   const [startDate, setStartDate] = useState("");
@@ -50,6 +51,10 @@ export function NewProjectForm({
       setError("Project name is required.");
       return;
     }
+    if (!customerName.trim()) {
+      setError("Customer is required.");
+      return;
+    }
     setError(null);
 
     startTransition(async () => {
@@ -58,6 +63,7 @@ export function NewProjectForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          customerName,
           description: description || null,
           status,
           startDate: startDate || null,
@@ -129,6 +135,19 @@ export function NewProjectForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          Customer
+        </label>
+        <input
+          type="text"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
           required
           className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />

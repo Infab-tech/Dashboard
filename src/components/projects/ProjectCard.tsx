@@ -32,6 +32,7 @@ export interface SubProjectSummary {
   id: string;
   name: string;
   code: string | null;
+  customerName: string;
   status: ProjectStatus;
   startDate: Date | null;
   endDate: Date | null;
@@ -42,6 +43,7 @@ export interface ProjectCardProps {
   id: string;
   name: string;
   code: string | null;
+  customerName: string;
   status: ProjectStatus;
   startDate: Date | null;
   endDate: Date | null;
@@ -53,6 +55,7 @@ export function ProjectCard({
   id,
   name,
   code,
+  customerName,
   status,
   startDate,
   endDate,
@@ -88,6 +91,9 @@ export function ProjectCard({
             <h3 className="truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</h3>
             {code && <span className="flex-shrink-0 text-xs text-neutral-400">{code}</span>}
           </div>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {customerName ? `Customer: ${customerName}` : "No customer set"}
+          </p>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {projectLeadName ? `Lead: ${projectLeadName}` : "No project lead set"} · {formatDate(startDate)} →{" "}
             {formatDate(endDate)}
@@ -125,6 +131,7 @@ export function ProjectCard({
                   {sub.code && <span className="flex-shrink-0 text-xs text-neutral-400">{sub.code}</span>}
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {sub.customerName ? `Customer: ${sub.customerName}` : "No customer set"} ·{" "}
                   {sub.projectLeadName ? `Lead: ${sub.projectLeadName}` : "No project lead set"} ·{" "}
                   {formatDate(sub.startDate)} → {formatDate(sub.endDate)}
                 </p>

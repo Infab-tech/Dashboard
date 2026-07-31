@@ -13,6 +13,11 @@ import { EditProjectForm } from "@/components/projects/EditProjectForm";
 // Task tree, timeline, and priority score change on every upload/edit — never prerender this page.
 export const dynamic = "force-dynamic";
 
+function toDateInputValue(date: Date | null): string | null {
+  if (!date) return null;
+  return date.toISOString().slice(0, 10);
+}
+
 const STATUS_BADGE_CLASS: Record<ProjectStatus, string> = {
   PLANNED: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
   ONGOING: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
@@ -93,12 +98,24 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{project.name}</h1>
             {project.code && <span className="text-sm text-neutral-400">{project.code}</span>}
           </div>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {project.customerName ? `Customer: ${project.customerName}` : "No customer set"}
+          </p>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {project.projectLead ? `Lead: ${project.projectLead.name}` : "No project lead set"} · {formatDate(project.startDate)} – {formatDate(project.endDate)}
           </p>
-          {project.description && (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300 max-w-2xl">{project.description}</p>
-          )}
+          <EditProjectForm
+            project={{
+              id: project.id,
+              name: project.name,
+              customerName: project.customerName,
+              description: project.description,
+              status: project.status,
+              startDate: toDateInputValue(project.startDate),
+              endDate: toDateInputValue(project.endDate),
+              projectLeadName: project.projectLead?.name ?? null,
+            }}
+          />
         </div>
         <div className="flex flex-col items-end gap-3">
           <div className="text-right">
@@ -139,6 +156,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                       <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">{sub.name}</span>
                       {sub.code && <span className="flex-shrink-0 text-xs text-neutral-400">{sub.code}</span>}
                     </div>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {sub.customerName ? `Customer: ${sub.customerName}` : "No customer set"}
+                    </p>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                       {sub.projectLead ? `Lead: ${sub.projectLead.name}` : "No project lead set"} ·{" "}
                       {formatDate(sub.startDate)} – {formatDate(sub.endDate)}

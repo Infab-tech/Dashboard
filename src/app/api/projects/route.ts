@@ -15,6 +15,7 @@ interface CreateProjectBody {
   startDate?: string | null;
   endDate?: string | null;
   projectLeadName?: string | null;
+  customerName?: string;
   parentId?: string | null;
 }
 
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
   const name = body.name?.trim();
   if (!name) {
     return NextResponse.json({ error: "Project name is required." }, { status: 400 });
+  }
+
+  const customerName = body.customerName?.trim();
+  if (!customerName) {
+    return NextResponse.json({ error: "Customer is required." }, { status: 400 });
   }
 
   const parentId = body.parentId?.trim() || null;
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
       name,
       code,
       description: body.description?.trim() || null,
+      customerName,
       status,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,

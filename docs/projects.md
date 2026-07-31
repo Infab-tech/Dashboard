@@ -43,21 +43,50 @@ Fully wired, first non-placeholder module in the app:
   `PRIORITY_WEIGHTS` in `priority-score.ts` to retune.
 - `Project.projectLeadId` (→ `Person`) added — the sheet's "Project Lead"
   column is one value per project, so it lives on `Project`, not per-task.
+- `Project.customerName` added: a plain required `String` (not a relation to
+  a new `Customer` directory model, unlike `Vendor`) — kept it simple since
+  that's all that was asked for. Required in the New/Edit project forms and
+  the API (`POST /api/projects`, `PATCH /api/projects/[id]`), and shown on
+  every project card (top-level and nested sub-project rows) and the detail
+  page header. The column itself is `@default("")` at the schema level so
+  the 40+ projects that existed before this field didn't block the
+  migration — they'll show "No customer set" until someone edits them in.
+  If customers turn out to need their own directory (dedup by name, contact
+  info, cross-project reporting) the way `Vendor` has, revisit as a proper
+  relation later; not needed for what was asked now.
 - Excel parsing chose `exceljs` over `xlsx`/SheetJS: the npm `xlsx` package has
   unpatched high-severity CVEs (prototype pollution, ReDoS) and this parses
   user-uploaded files, so it was ruled out despite otherwise being a common
   first choice.
 - Human-readable project ID **decided**: auto-generated from the name in
-  `src/lib/projects/generate-code.ts` (`generateProjectCode`), assigned once
-  at creation and never recomputed on rename. Three shapes depending on where
-  a distinctive abbreviation/number sits in the title: none anywhere →
-  initials of every word (`Pressure Switch Parking Brake` → `PSPB`);
-  abbreviation leads → abbreviation kept as-is + initials of the rest (`ITC
-  Heater` → `ITC-H`); abbreviation trails plain leading words → lead-word
-  initials + the abbreviation/number tail, dropping any further plain words
-  (`Pressure Transducer 280 & 330 Bar` → `PT-280&330`). Collisions get a
-  `-2`, `-3`, ... suffix via `resolveUniqueProjectCode`. All 15 existing
-  projects were backfilled against this scheme.
+  `src/lib/projects/generate-code.ts` (`generateProjectCode`). Three shapes
+  depending on where a distinctive abbreviation/number sits in the title:
+  none anywhere → initials of every word (`Pressure Switch Parking Brake` →
+  `PSPB`); abbreviation leads → abbreviation kept as-is + initials of the
+  rest (`ITC Heater` → `ITC-H`); abbreviation trails plain leading words →
+  lead-word initials + the abbreviation/number tail, dropping any further
+  plain words (`Pressure Transducer 280 & 330 Bar` → `PT-280&330`).
+  Collisions get a `-2`, `-3`, ... suffix via `resolveUniqueProjectCode`.
+  **Reversed from the original call**: codes now regenerate whenever a
+  project is renamed (`PATCH /api/projects/[id]` recomputes `code` when
+  `name` changes, collision-checked against every other project) — renaming
+  "Pressure Switch A1, A2 & A3" down to "Pressure Switch" now updates its
+  code from `PS-A1,A2&A3` to `PS`, instead of freezing at whatever was
+  assigned at creation. All existing projects (42, as of the last pass) were
+  regenerated against this scheme, including ones with `code: null` that had
+  been created outside the normal form flow.
+- Collision-suffix reclaiming **decided**: a `-2`/`-3`/... suffix only ever
+  exists because `resolveUniqueProjectCode` found the clean `base` code
+  taken *at creation time* — deleting whatever was holding `base` doesn't by
+  itself put any already-suffixed project back on the clean code. This came
+  up twice in practice (a project deleted and recreated as a sub-project
+  elsewhere, e.g. `PS-DPS-2`, `HTPT-2`, with the original since removed).
+  `deleteProject` (`src/lib/actions/projects.ts`) now calls `reclaimCode`
+  after every delete, for the deleted project's own code **and** its
+  cascade-deleted sub-projects' codes: it looks up whoever holds `base-2`
+  and promotes them to `base`, then `base-3` down to `base-2`, and so on,
+  compacting the whole chain. Self-healing — no manual sweep needed for this
+  case going forward.
 - Sub-projects **decided**: a project can have a `parentId` pointing at
   another `Project` (self-relation `subProjects`/`parent` in the schema). A
   sub-project is a full `Project` row — its own status, dates, code, tasks,

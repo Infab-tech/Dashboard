@@ -106,6 +106,25 @@ this, `Project.parentId` was added with a narrow hand-written
 `WorkflowTask_parentId_fkey`) instead of a full `db push`, specifically to
 avoid touching `DailyLog` at all.
 
+*Update, later the same day*: the above got resolved cleanly — `main` picked
+up a real "implement Daily Log module" commit (`d4736b1`) whose
+`schema.prisma` matched the live table column-for-column, so merging `main`
+into this branch fixed it with zero manual intervention.
+
+**⚠️ `DailyLog` has drifted from git a *second* time (2026-07-31)** — adding
+`Project.customerName` hit the exact same "cannot be executed" `db push`
+blocker again, this time because the live table is now **missing**
+`assignedTo` (present in the committed schema, gone from the live column
+list) — the opposite direction from before. No new commits landed on `main`
+to explain it (checked — none), so this is a direct, uncommitted change to
+the shared DB, not a merge lag. Same handling as last time: added
+`Project.customerName` via a narrow hand-written `ALTER TABLE` touching only
+the `Project` table, left `DailyLog` untouched. **Whoever is iterating on
+Daily Log directly against the shared Supabase instance needs to commit
+their `schema.prisma` changes** (or at minimum give the other dev a heads
+up before altering that table again) — a third drift is very likely at this
+rate, and it'll keep blocking anyone else's `db push` until it's committed.
+
 **⚠️ Schema drift found during that push, now reconciled** — the live DB had
 columns that were never in this branch's `schema.prisma`: `Asset.description`,
 `Asset.modelNumber`, `Asset.quantity`, `User.isActive`,

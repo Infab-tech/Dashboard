@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 const VALID_STATUSES: ProjectStatus[] = ["PLANNED", "ONGOING", "ON_HOLD", "COMPLETED"];
 
-interface CreateProjectBody {
+interface UpdateProjectBody {
   name?: string;
   description?: string | null;
   status?: ProjectStatus;
@@ -16,11 +16,20 @@ interface CreateProjectBody {
   endDate?: string | null;
   projectLeadName?: string | null;
   customerName?: string;
-  parentId?: string | null;
 }
 
-export async function POST(request: NextRequest) {
-  const body: CreateProjectBody = await request.json();
+// Edits core project fields. Renaming regenerates `code` from the new name
+// (collision-checked against every other project) — codes track the name
+// they were derived from instead of freezing at whatever they were assigned
+// at creation. See docs/projects.md.
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body: UpdateProjectBody = await request.json();
+
+  const existing = await prisma.project.findUnique({ where: { id }, select: { id: true, name: true } });
+  if (!existing) {
+    return NextResponse.json({ error: "Project not found." }, { status: 404 });
+  }
 
   const name = body.name?.trim();
   if (!name) {
@@ -32,31 +41,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Customer is required." }, { status: 400 });
   }
 
-  const parentId = body.parentId?.trim() || null;
-  if (parentId) {
-    const parent = await prisma.project.findUnique({ where: { id: parentId }, select: { id: true } });
-    if (!parent) {
-      return NextResponse.json({ error: "Parent project not found." }, { status: 400 });
-    }
+  if (body.status && !VALID_STATUSES.includes(body.status)) {
+    return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   }
 
-  const status = body.status && VALID_STATUSES.includes(body.status) ? body.status : "PLANNED";
   const projectLeadId = await resolvePersonId(prisma, body.projectLeadName?.trim() || null);
-  const code = await resolveUniqueProjectCode(prisma, name);
+  const code = name !== existing.name ? await resolveUniqueProjectCode(prisma, name, id) : undefined;
 
-  const project = await prisma.project.create({
+  const project = await prisma.project.update({
+    where: { id },
     data: {
       name,
-      code,
+      ...(code ? { code } : {}),
       description: body.description?.trim() || null,
       customerName,
-      status,
+      status: body.status,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
       projectLeadId,
-      parentId,
     },
   });
 
-  return NextResponse.json(project, { status: 201 });
+  return NextResponse.json(project);
 }

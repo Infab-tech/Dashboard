@@ -1,6 +1,17 @@
 import { DailyLogForm } from "@/components/dailylog/DailyLogForm";
+import { prisma } from "@/lib/prisma/client";
 
-export default function NewDailyLogPage() {
+export default async function NewDailyLogPage() {
+  const projects = await prisma.project.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
+
+  const people = await prisma.person.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
@@ -12,7 +23,7 @@ export default function NewDailyLogPage() {
         </p>
       </div>
 
-      <DailyLogForm />
+      <DailyLogForm projects={projects} people={people} />
     </div>
   );
 }

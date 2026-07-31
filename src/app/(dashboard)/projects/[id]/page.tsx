@@ -72,6 +72,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     dueDate: task.dueDate,
   }));
 
+  const editProjectData = {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    status: project.status,
+    startDate: project.startDate,
+    endDate: project.endDate,
+    projectLeadName: project.projectLead?.name || null,
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -107,17 +117,20 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             }}
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end gap-3">
           <div className="text-right">
             <p className="text-xs text-neutral-400">Priority score</p>
             <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{priorityScore}</p>
           </div>
-          <a
-            href={`/api/projects/${project.id}/export`}
-            className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
-          >
-            Export PDF
-          </a>
+          <div className="flex items-center gap-2">
+            <EditProjectForm project={editProjectData} />
+            <a
+              href={`/api/projects/${project.id}/export`}
+              className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            >
+              Export PDF
+            </a>
+          </div>
         </div>
       </div>
 

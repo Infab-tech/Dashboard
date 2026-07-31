@@ -46,12 +46,6 @@ enum FinancialEntryType {
   EXPENSE
 }
 
-enum ProcurementStatus {
-  REQUESTED
-  ORDERED
-  RECEIVED
-  CANCELLED
-}
 
 enum AssetStatus {
   IN_USE
@@ -235,19 +229,20 @@ model Vendor {
 }
 
 model ProcurementOrder {
-  id           String            @id @default(uuid())
-  code         String?           @unique
-  projectId    String
-  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vendorId     String
-  vendor       Vendor            @relation(fields: [vendorId], references: [id])
-  itemsSummary String
-  status       ProcurementStatus @default(REQUESTED)
-  amount       Decimal?
-  orderedAt    DateTime?
-  deliveredAt  DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id                   String            @id @default(uuid())
+  code                 String?           @unique
+  projectId            String?
+  project              Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId             String?
+  vendor               Vendor?           @relation(fields: [vendorId], references: [id])
+  itemRequired         String?
+  status               String            @default("Not Ordered")
+  amount               Decimal?
+  orderedAt            DateTime?
+  expectedDeliveryDate DateTime?
+  remarks              String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 }
 
 model DailyLog {
@@ -259,7 +254,7 @@ model DailyLog {
   projectId          String?
   project            Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   task               String
-  assignedTo         String
+  assignees          Person[] @relation("DailyLogAssignees")
   targetDateOrStatus String?
   remarks            String?
   authorId           String?
@@ -306,6 +301,7 @@ model Person {
   assignedTasks  WorkflowTask[]
   assignedAssets Asset[]
   ledProjects    Project[]       @relation("ProjectLead")
+  dailyLogs      DailyLog[]      @relation("DailyLogAssignees")
 }
 
 // Join table: which people are on which projects, and in what capacity.

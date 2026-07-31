@@ -1,6 +1,7 @@
 import { DailyLogForm } from "@/components/dailylog/DailyLogForm";
 import { getDailyLog } from "@/lib/actions/dailylog";
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma/client";
 
 type PageProps = Promise<{ id: string }>;
 
@@ -11,6 +12,16 @@ export default async function EditDailyLogPage(props: { params: PageProps }) {
   if (!log) {
     notFound();
   }
+
+  const projects = await prisma.project.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
+
+  const people = await prisma.person.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -23,7 +34,7 @@ export default async function EditDailyLogPage(props: { params: PageProps }) {
         </p>
       </div>
 
-      <DailyLogForm initialData={log} />
+      <DailyLogForm initialData={log} projects={projects} people={people} />
     </div>
   );
 }

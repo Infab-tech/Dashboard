@@ -1,13 +1,30 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ProjectStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma/client";
-import { computePriorityScore } from "@/lib/projects/priority-score";
+import { computePriorityScore, sortByDate } from "@/lib/projects/priority-score";
 import { TaskTree } from "@/components/projects/TaskTree";
 import { TimelineAxis, type TimelineTask } from "@/components/projects/TimelineAxis";
 import { TaskStatusBarChart } from "@/components/projects/TaskStatusBarChart";
 import { UploadTasksForm } from "@/components/projects/UploadTasksForm";
+import { NewProjectForm } from "@/components/projects/NewProjectForm";
 
 // Task tree, timeline, and priority score change on every upload/edit — never prerender this page.
 export const dynamic = "force-dynamic";
+
+const STATUS_BADGE_CLASS: Record<ProjectStatus, string> = {
+  PLANNED: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
+  ONGOING: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+};
+
+const STATUS_LABEL: Record<ProjectStatus, string> = {
+  PLANNED: "Planned",
+  ONGOING: "Ongoing",
+  ON_HOLD: "On Hold",
+  COMPLETED: "Completed",
+};
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";
@@ -21,6 +38,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     where: { id },
     include: {
       projectLead: true,
+      parent: true,
+      subProjects: { include: { projectLead: true } },
       tasks: {
         include: {
           assignedTo: true,
@@ -37,6 +56,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   if (!project) notFound();
 
+  const subProjects = sortByDate(project.subProjects);
+
   const priorityScore = computePriorityScore(project);
   const timelineTasks: TimelineTask[] = project.tasks.map((task) => ({
     id: task.id,
@@ -49,6 +70,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          {project.parent && (
+            <Link
+              href={`/projects/${project.parent.id}`}
+              className="mb-1 inline-block text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+            >
+              ↑ Part of {project.parent.name}
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{project.name}</h1>
             {project.code && <span className="text-sm text-neutral-400">{project.code}</span>}
@@ -70,6 +99,45 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </a>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Sub-projects
+          </h2>
+          <NewProjectForm parentId={project.id} parentName={project.name} />
+        </div>
+        {subProjects.length === 0 ? (
+          <p className="text-sm text-neutral-400">No sub-projects yet.</p>
+        ) : (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {subProjects.map((sub) => (
+              <li key={sub.id}>
+                <Link
+                  href={`/projects/${sub.id}`}
+                  className="flex items-center justify-between gap-4 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">{sub.name}</span>
+                      {sub.code && <span className="flex-shrink-0 text-xs text-neutral-400">{sub.code}</span>}
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      {sub.projectLead ? `Lead: ${sub.projectLead.name}` : "No project lead set"} ·{" "}
+                      {formatDate(sub.startDate)} – {formatDate(sub.endDate)}
+                    </p>
+                  </div>
+                  <span
+                    className={`flex-shrink-0 rounded-full px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[sub.status]}`}
+                  >
+                    {STATUS_LABEL[sub.status]}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">

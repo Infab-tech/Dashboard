@@ -11,7 +11,21 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "COMPLETED", label: "Completed" },
 ];
 
-export function NewProjectForm() {
+export interface ExistingProjectOption {
+  id: string;
+  name: string;
+  code: string | null;
+}
+
+export function NewProjectForm({
+  parentId,
+  parentName,
+  existingProjects,
+}: {
+  parentId?: string;
+  parentName?: string;
+  existingProjects?: ExistingProjectOption[];
+}) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -23,6 +37,12 @@ export function NewProjectForm() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [projectLeadName, setProjectLeadName] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState("");
+
+  // When parentId is passed in (the per-card/per-project "+ Sub-project" quick-add),
+  // the parent is already fixed and there's no dropdown. The main "New project" form
+  // has no fixed parentId, so it offers the dropdown instead when a project list is given.
+  const showParentPicker = !parentId && !!existingProjects?.length;
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,6 +63,7 @@ export function NewProjectForm() {
           startDate: startDate || null,
           endDate: endDate || null,
           projectLeadName: projectLeadName || null,
+          parentId: parentId || selectedParentId || null,
         }),
       });
 
@@ -61,10 +82,18 @@ export function NewProjectForm() {
     return (
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
-        className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(true);
+        }}
+        className={
+          parentId
+            ? "rounded-md px-2 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            : "rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+        }
       >
-        New project
+        {parentId ? "+ Sub-project" : "New project"}
       </button>
     );
   }
@@ -72,13 +101,20 @@ export function NewProjectForm() {
   return (
     <form
       onSubmit={handleSubmit}
+      onClick={(e) => e.stopPropagation()}
       className="w-full max-w-lg space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">New project</h3>
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+          {parentId ? `New sub-project${parentName ? ` under ${parentName}` : ""}` : "New project"}
+        </h3>
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(false);
+          }}
           className="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
           Cancel
@@ -122,6 +158,27 @@ export function NewProjectForm() {
           className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>
+
+      {showParentPicker && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Sub-project of
+          </label>
+          <select
+            value={selectedParentId}
+            onChange={(e) => setSelectedParentId(e.target.value)}
+            className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          >
+            <option value="">None — top-level project</option>
+            {existingProjects!.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+                {project.code ? ` (${project.code})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">

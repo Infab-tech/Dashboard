@@ -44,7 +44,7 @@ export function Sidebar({ userRole, isLoggedIn }: { userRole?: string; isLoggedI
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {NAV_ITEMS.filter((item) => {
-          if (item.label === "Admin" && userRole !== "ADMIN") {
+          if ((item.label === "Admin" || item.label === "Financials") && userRole !== "ADMIN") {
             return false;
           }
           return true;

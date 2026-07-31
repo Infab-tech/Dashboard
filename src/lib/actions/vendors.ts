@@ -12,23 +12,29 @@ export async function createVendor(data: { name: string; code?: string; category
   // If no code provided, generate initials from name with sequential 4-digit number
   let code = data.code;
   if (!code) {
-    const initials = data.name.split(' ').map(w => w[0]).join('').replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 5) || 'VEND';
+    const cleanWords = data.name.split(/[^A-Za-z0-9]/).filter(Boolean);
+    const prefix = cleanWords.map(w => w[0]).join('').toUpperCase().substring(0, 5) || 'VEND';
     
     const existing = await prisma.vendor.findMany({
-      where: { code: { startsWith: `${initials}-` } },
-      orderBy: { code: 'desc' },
-      take: 1
+      where: { code: { startsWith: `${prefix}-` } },
+      orderBy: { code: 'desc' }
     });
     
     let nextNum = 1;
-    if (existing.length > 0 && existing[0].code) {
-      const match = existing[0].code.match(/-(\d{4})$/);
-      if (match) {
-        nextNum = parseInt(match[1], 10) + 1;
+    for (const v of existing) {
+      if (v.code) {
+        const match = v.code.match(/-(\d{2})$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= nextNum) {
+            nextNum = num + 1;
+            break;
+          }
+        }
       }
     }
     
-    code = `${initials}-${String(nextNum).padStart(4, '0')}`;
+    code = `${prefix}-${String(nextNum).padStart(2, '0')}`;
   }
 
   return await prisma.vendor.create({

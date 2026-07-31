@@ -242,16 +242,21 @@ model ProcurementOrder {
 }
 
 model DailyLog {
-  id        String   @id @default(uuid())
-  code      String?  @unique
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  logDate   DateTime
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  code               String?  @unique
+  date               DateTime
+  serialNo           Int?
+  projectName        String
+  projectId          String?
+  project            Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task               String
+  assignedTo         String
+  targetDateOrStatus String?
+  remarks            String?
+  authorId           String?
+  author             User?    @relation(fields: [authorId], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Asset {
@@ -261,9 +266,12 @@ model Asset {
   project      Project?    @relation(fields: [projectId], references: [id])
   name         String
   category     String?
+  modelNumber  String?
+  description  String?
+  quantity     Int         @default(1)
   status       AssetStatus @default(IN_STORAGE)
   assignedToId String?
-  assignedTo   Person?     @relation(fields: [assignedToId], references: [id])
+  assignedTo   Person?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   purchaseDate DateTime?
   value        Decimal?
   createdAt    DateTime    @default(now())

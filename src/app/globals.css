@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Switch dark mode to be class-based so it doesn't automatically trigger from OS preferences */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,9 +13,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
 }
 
 body {

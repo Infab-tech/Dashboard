@@ -202,7 +202,7 @@ export function InventoryForm({ projects, vendors, initialData }: InventoryFormP
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium leading-6 text-gray-900">Reference Number</label>
+            <label className="block text-sm font-medium leading-6 text-gray-900">Part Number</label>
             <input
               type="text"
               name="referenceNumber"

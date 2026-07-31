@@ -221,8 +221,8 @@ model Vendor {
   contactPhone String?
   address      String?
   place        String?
-  postalCode   String?
   state        String?
+  postalCode   String?
   gstStatus    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

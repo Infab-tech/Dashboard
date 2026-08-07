@@ -2,8 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma/client";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { UserRole } from "@prisma/client";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function getCurrentPerson() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { supabaseAuthId: user.id },
+    include: { personRecord: true },
+  });
+
+  return dbUser?.personRecord || null;
+}
 
 export async function createUser(formData: FormData) {
   const name = formData.get("name") as string;

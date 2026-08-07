@@ -114,6 +114,7 @@ model Project {
   assets         Asset[]
   people         PersonProject[]
   historyEvents  TaskHistoryEvent[]
+  deliveryChallans DeliveryChallan[]
 }
 
 model WorkflowTask {
@@ -206,6 +207,8 @@ model InventoryItem {
   location        String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  deliveryChallanItems DeliveryChallanItem[]
 }
 
 model Vendor {
@@ -226,6 +229,7 @@ model Vendor {
 
   procurements   ProcurementOrder[]
   inventoryItems InventoryItem[]
+  deliveryChallans DeliveryChallan[]
 }
 
 model ProcurementOrder {
@@ -261,6 +265,8 @@ model DailyLog {
   author             User?    @relation(fields: [authorId], references: [id])
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  personalTasks      PersonalTask[]
 }
 
 model Asset {
@@ -302,6 +308,7 @@ model Person {
   assignedAssets Asset[]
   ledProjects    Project[]       @relation("ProjectLead")
   dailyLogs      DailyLog[]      @relation("DailyLogAssignees")
+  personalTasks  PersonalTask[]
 }
 
 // Join table: which people are on which projects, and in what capacity.
@@ -314,4 +321,53 @@ model PersonProject {
   roleOnProject String?
 
   @@unique([personId, projectId])
+}
+
+model DeliveryChallan {
+  id          String   @id @default(uuid())
+  code        String?  @unique
+  date        DateTime @default(now())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  vendorId    String?
+  vendor      Vendor?  @relation(fields: [vendorId], references: [id])
+  recipient   String?
+  address     String?
+  gstNumber   String?
+  placeOfSupply String?
+  jobReference String?
+  jobType     String?
+  status      String   @default("Open")
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       DeliveryChallanItem[]
+}
+
+model DeliveryChallanItem {
+  id                String          @id @default(uuid())
+  deliveryChallanId String
+  deliveryChallan   DeliveryChallan @relation(fields: [deliveryChallanId], references: [id], onDelete: Cascade)
+  inventoryItemId   String
+  inventoryItem     InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  description       String?
+  quantity          Int
+  remarks           String?
+}
+
+model PersonalTask {
+  id          String   @id @default(uuid())
+  personId    String
+  person      Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  title       String
+  date        DateTime @default(now())
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  
+  dailyLogId  String?
+  dailyLog    DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

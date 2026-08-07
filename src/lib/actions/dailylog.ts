@@ -61,6 +61,18 @@ export async function createDailyLog(data: {
       }
     },
   });
+
+  for (const id of data.assigneeIds) {
+    await prisma.personalTask.create({
+      data: {
+        personId: id,
+        title: data.task,
+        date: data.date,
+        dailyLogId: log.id,
+      }
+    });
+  }
+
   revalidatePath("/daily-log");
   return log;
 }
@@ -90,6 +102,35 @@ export async function updateDailyLog(id: string, data: {
       }
     },
   });
+
+  const existingTasks = await prisma.personalTask.findMany({ where: { dailyLogId: log.id } });
+  const toDelete = existingTasks.filter(t => !data.assigneeIds.includes(t.personId));
+  if (toDelete.length > 0) {
+    await prisma.personalTask.deleteMany({ where: { id: { in: toDelete.map(t => t.id) } } });
+  }
+
+  for (const personId of data.assigneeIds) {
+    const existing = existingTasks.find(t => t.personId === personId);
+    if (existing) {
+      await prisma.personalTask.update({
+        where: { id: existing.id },
+        data: {
+          title: data.task,
+          date: data.date,
+        }
+      });
+    } else {
+      await prisma.personalTask.create({
+        data: {
+          personId,
+          title: data.task,
+          date: data.date,
+          dailyLogId: log.id,
+        }
+      });
+    }
+  }
+
   revalidatePath("/daily-log");
   return log;
 }

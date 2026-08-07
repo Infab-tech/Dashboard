@@ -75,10 +75,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const editProjectData = {
     id: project.id,
     name: project.name,
+    customerName: project.customerName,
     description: project.description,
     status: project.status,
-    startDate: project.startDate,
-    endDate: project.endDate,
+    startDate: toDateInputValue(project.startDate),
+    endDate: toDateInputValue(project.endDate),
     projectLeadName: project.projectLead?.name || null,
   };
 

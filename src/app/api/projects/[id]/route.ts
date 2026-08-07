@@ -36,10 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Project name is required." }, { status: 400 });
   }
 
-  const customerName = body.customerName?.trim();
-  if (!customerName) {
-    return NextResponse.json({ error: "Customer is required." }, { status: 400 });
-  }
+  const customerName = body.customerName?.trim() || "";
 
   if (body.status && !VALID_STATUSES.includes(body.status)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });

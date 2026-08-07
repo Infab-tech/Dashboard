@@ -27,10 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Project name is required." }, { status: 400 });
   }
 
-  const customerName = body.customerName?.trim();
-  if (!customerName) {
-    return NextResponse.json({ error: "Customer is required." }, { status: 400 });
-  }
+  const customerName = body.customerName?.trim() || "";
 
   const parentId = body.parentId?.trim() || null;
   if (parentId) {

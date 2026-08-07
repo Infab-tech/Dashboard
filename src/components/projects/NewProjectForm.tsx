@@ -51,10 +51,6 @@ export function NewProjectForm({
       setError("Project name is required.");
       return;
     }
-    if (!customerName.trim()) {
-      setError("Customer is required.");
-      return;
-    }
     setError(null);
 
     startTransition(async () => {
@@ -148,7 +144,7 @@ export function NewProjectForm({
           type="text"
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
-          required
+          placeholder="Optional"
           className="w-full rounded-md border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>
